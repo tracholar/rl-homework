@@ -63,7 +63,7 @@ def value_iteration(P, nS, nA, gamma=0.9, max_iteration=20, tol=1e-3):
 			policy[s] = max_action
 		if epsilon > max_dv:
 			epsilon = max_dv
-		print '\rValue Iteration %d, epsilon=%f' % (it, epsilon),
+		#print '\rValue Iteration %d, epsilon=%f' % (it, epsilon),
 
 	return V, policy
 
