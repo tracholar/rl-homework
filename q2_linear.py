@@ -7,6 +7,7 @@ from core.deep_q_learning import DQN
 from q1_schedule import LinearExploration, LinearSchedule
 
 from configs.q2_linear import config
+import numpy as np
 
 
 class Linear(DQN):
@@ -54,8 +55,16 @@ class Linear(DQN):
         """
         ##############################################################
         ################YOUR CODE HERE (6-15 lines) ##################
+        img_height, img_width, k = state_shape
+        #k = 4
 
-        pass
+        self.s = tf.placeholder(dtype=tf.uint8, shape=(None, img_height, img_width, k * self.config.state_history))
+        self.a = tf.placeholder(dtype=tf.int32, shape=(None,))
+        self.r = tf.placeholder(dtype=tf.float32, shape=(None,))
+        self.sp = tf.placeholder(dtype=tf.uint8, shape=(None, img_height, img_width, k * self.config.state_history))
+        self.done_mask = tf.placeholder(dtype=tf.bool, shape=(None,))
+        self.lr = tf.placeholder(dtype=tf.float32, shape=(), name='lr')
+
 
         ##############################################################
         ######################## END YOUR CODE #######################
@@ -95,8 +104,13 @@ class Linear(DQN):
         """
         ##############################################################
         ################ YOUR CODE HERE - 2-3 lines ################## 
-        
-        pass
+
+        batch_size, img_height, img_width, nchannels = state.shape
+        m = img_height * img_width * nchannels
+        with tf.variable_scope(scope, reuse=reuse, initializer=tf.random_normal_initializer()):
+            W = tf.get_variable("W", (m.value, num_actions), tf.float32)
+            out = tf.matmul(tf.reshape(state, [-1, m.value] ), W)
+
 
         ##############################################################
         ######################## END YOUR CODE #######################
@@ -142,8 +156,10 @@ class Linear(DQN):
         """
         ##############################################################
         ################### YOUR CODE HERE - 5-10 lines #############
-        
-        pass
+
+        W_new = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=q_scope)
+        W = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=target_q_scope)
+        self.update_target_op = tf.group(*[tf.assign(w, w_new) for w,w_new in zip(W, W_new)])
 
         ##############################################################
         ######################## END YOUR CODE #######################
@@ -184,7 +200,8 @@ class Linear(DQN):
         ##############################################################
         ##################### YOUR CODE HERE - 4-5 lines #############
 
-        pass
+        q_sample = self.r + self.config.gamma * tf.reduce_max(target_q, axis=1) * tf.cast(self.done_mask, tf.float32)
+        self.loss = tf.reduce_mean( (q_sample - tf.reduce_sum(q * tf.one_hot(self.a, num_actions), axis=1) )**2  )
 
         ##############################################################
         ######################## END YOUR CODE #######################
@@ -221,8 +238,22 @@ class Linear(DQN):
         ##############################################################
         #################### YOUR CODE HERE - 8-12 lines #############
 
-        pass
-        
+        optimizer = tf.train.AdamOptimizer(self.lr) #(self.lr)
+
+        var = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=scope)
+        grads_variables = optimizer.compute_gradients(self.loss, var)
+        optimizer.apply_gradients(grads_variables)
+
+        grads, var = zip(*grads_variables)
+
+        if self.config.grad_clip:
+            grads = [tf.clip_by_norm(g, self.config.clip_val) for g in grads]
+
+        grads_variables = zip(grads, var)
+
+        self.train_op = optimizer.apply_gradients(grads_variables)
+        self.grad_norm = tf.global_norm(grads)
+
         ##############################################################
         ######################## END YOUR CODE #######################
     

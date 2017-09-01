@@ -54,8 +54,18 @@ class NatureQN(Linear):
         ##############################################################
         ################ YOUR CODE HERE - 10-15 lines ################ 
 
-        pass
+        batch_size, img_height, img_width, nchannels = state.shape
+        m = img_height * img_width * nchannels
+        with tf.variable_scope(scope, reuse=reuse, initializer=tf.random_normal_initializer()):
+            h1 = layers.conv2d(state, 32, (8,8), 4)
+            h2 = layers.conv2d(h1, 64, (4,4), 2)
+            h3 = layers.conv2d(h2, 64, (3,3), 1)
+            h4 = layers.fully_connected(layers.flatten(h3), 512)
+            out = layers.fully_connected(h4,  num_actions, activation_fn=None)
 
+        print batch_size, img_height, img_width, nchannels
+        print h1, h2, h3, h4
+        print out
         ##############################################################
         ######################## END YOUR CODE #######################
         return out
