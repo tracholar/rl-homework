@@ -64,12 +64,67 @@ class MyDQN(Linear):
         """
         ##############################################################
         ################ YOUR CODE HERE - 10-15 lines ################ 
-        
-        pass
+
+        batch_size, img_height, img_width, nchannels = state.shape
+        m = img_height * img_width * nchannels
+        with tf.variable_scope(scope, reuse=reuse, initializer=tf.random_normal_initializer()):
+            h1 = layers.conv2d(state, 32, (8,8), 4)
+            h2 = layers.conv2d(h1, 64, (4,4), 2)
+            h3 = layers.conv2d(h2, 64, (3,3), 1)
+            h4 = layers.fully_connected(layers.flatten(h3), 512)
+            out = layers.fully_connected(h4,  num_actions, activation_fn=None)
+
+        print batch_size, img_height, img_width, nchannels
+        print h1, h2, h3, h4
+        print out
 
         ##############################################################
         ######################## END YOUR CODE #######################
         return out
+
+
+    def add_loss_op(self, q, target_q):
+        """
+        Sets the loss of a batch, self.loss is a scalar
+
+        Args:
+            q: (tf tensor) shape = (batch_size, num_actions)
+            target_q: (tf tensor) shape = (batch_size, num_actions)
+        """
+        # you may need this variable
+        num_actions = self.env.action_space.n
+
+        ##############################################################
+        """
+        TODO: The loss for an example is defined as:
+                Q_samp(s) = r if done
+                          = r + gamma * Q_target(s', argmax_a' Q(s', a'))
+                loss = (Q_samp(s) - Q(s, a))^2
+
+              You need to compute the average of the loss over the minibatch
+              and store the resulting scalar into self.loss
+
+        HINT: - config variables are accessible through self.config
+              - you can access placeholders like self.a (for actions)
+                self.r (rewards) or self.done_mask for instance
+              - you may find the following functions useful
+                    - tf.cast
+                    - tf.reduce_max / reduce_sum
+                    - tf.one_hot
+                    - ...
+
+        (be sure that you set self.loss)
+        """
+        ##############################################################
+        ##################### YOUR CODE HERE - 4-5 lines #############
+
+        max_action = tf.argmax(q, axis=1)
+        q_sample = self.r + self.config.gamma * tf.reduce_sum(target_q * tf.one_hot(max_action, num_actions), axis=1) * tf.cast(self.done_mask, tf.float32)
+        self.loss = tf.reduce_mean( (q_sample - tf.reduce_sum(q * tf.one_hot(self.a, num_actions), axis=1) )**2  )
+
+        ##############################################################
+        ######################## END YOUR CODE #######################
+
 
 
 """

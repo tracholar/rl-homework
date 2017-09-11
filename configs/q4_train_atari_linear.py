@@ -33,9 +33,9 @@ class config():
     learning_freq      = 4
     state_history      = 4
     skip_frame         = 4
-    lr_begin           = 0.00025
-    lr_end             = 0.00005
-    lr_nsteps          = nsteps_train/2
+    lr_begin           = 0.0025
+    lr_end             = 0.0005
+    lr_nsteps          = nsteps_train/12
     eps_begin          = 1
     eps_end            = 0.1
     eps_nsteps         = 1000000
